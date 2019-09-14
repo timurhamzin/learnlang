@@ -1,0 +1,12 @@
+{% extends "base_generic.html" %}
+{% block title %}
+<title>User settings</title>
+{% endblock %}
+
+{% block content %}
+  <a href="{% url 'user:user_settings_update' pk=request.user.id %}">Edit</a>
+  <h1>My Settings</h1>
+  <ul>
+    <li><strong>Default target language:</strong> {{ user_settings.default_translation_language }}</li>
+  </ul>
+{% endblock %}

@@ -1,0 +1,1 @@
+web: gunicorn learnlan.wsgi --log-file -
