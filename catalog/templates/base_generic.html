@@ -10,8 +10,10 @@
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
-    {% if user_settings_id == None %}
-        <li>fdas: {{ user_settings_id }}</li>
+    {% if request.user %}
+        <li>You are logged in as {{ request.user }}</li>
+    {% else %}
+        <li>You are not logged in </li>
     {% endif %}
   <div class="container-fluid">
     <div class="row">

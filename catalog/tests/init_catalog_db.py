@@ -1,7 +1,7 @@
-from catalog.models import Language
+from catalog.models import Language, Book, Author, Genre
 from django.test import TestCase, SimpleTestCase
 
-def init_catalog_db():
+def init_langs():
     Language.objects.all().delete()
     Language.objects.create(name='Azerbaijani', language_code='az')
     Language.objects.create(name='Malayalam', language_code='ml')
@@ -96,3 +96,30 @@ def init_catalog_db():
     Language.objects.create(name='Malagasy', language_code='mg')
     Language.objects.create(name='Japanese', language_code='ja')
     Language.objects.create(name='Malay', language_code='ms')
+
+
+from datetime import datetime
+
+def init_author():
+    return  Author.objects.create(
+        date_of_birth=datetime.strptime('01.01.2001', '%d.%m.%Y'),
+        date_of_death = datetime.strptime('01.01.2021', '%d.%m.%Y'),
+        first_name="Test",
+        last_name = "Author"
+    )
+
+def init_genre():
+    return Genre.objects.create(
+        name='Test genre',
+    )
+
+def init_books():
+    book = Book.objects.create(
+        title='My test book',
+        author=init_author(),
+        summary='test summary',
+        isbn='1111111111111',
+        source_language=Language.objects.filter(name='English').first(),
+        text='My test text. Two sentences.'
+    )
+    book.genre.set((init_genre(),))
