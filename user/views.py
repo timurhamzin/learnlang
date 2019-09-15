@@ -37,7 +37,7 @@ from django.urls import reverse
 
 class UserSettingsUpdate(LoginRequiredMixin, UpdateView):
     model = UserSettings
-    fields = '__all__'
+    fields = ('default_translation_language',)
 
     def get_success_url(self):
         # No need for reverse_lazy here, because it's called inside the method

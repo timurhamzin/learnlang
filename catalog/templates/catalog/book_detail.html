@@ -14,7 +14,6 @@
   <p><strong>ISBN:</strong> {{ book.isbn }}</p>
   <p><strong>Source language:</strong> {{ book.source_language }}</p>
   <p><strong>Translation language:</strong> {{ book.translation_language }}</p>
-  <p><strong>Language:</strong> {{ book.language }}</p>
   <p><strong>Genre:</strong> {% for genre in book.genre.all %} {{ genre }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
 
   <div style="margin-left:20px;margin-top:20px">
