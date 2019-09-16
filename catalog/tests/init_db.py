@@ -1,3 +1,5 @@
+from django.contrib.auth.models import User
+from user.models import UserSettings
 from catalog.models import Language, Book, Author, Genre
 from django.test import TestCase, SimpleTestCase
 
@@ -123,3 +125,24 @@ def init_books():
         text='My test text. Two sentences.'
     )
     book.genre.set((init_genre(),))
+    user = User.objects.get(pk=1)
+    book.text_with_translation = translate_in_place(book, user)
+    book.save()
+
+def translate_in_place(book, user):
+    from yandex_translate import YandexTranslate
+    translate = YandexTranslate('trnsl.1.1.20181030T164747Z.50350640be185f5d.a9c2d0892171111c7027edd85669141908d3301a')
+    # print('Languages:', translate.langs)
+    # print('Translate directions:', translate.directions)
+    # print('Detect language:', translate.detect('Привет, мир!'))
+    # print('Translate:', translate.translate('Привет, мир!', 'ru-en'))  # or just 'en'
+    # from_lang = translate.detect(book.text)
+    from_lang = 'en'
+    to_lang = UserSettings.objects.filter(user=user).first().default_translation_language.language_code
+    result = translate.translate(book.text, f'{from_lang}-{to_lang}')
+    return result
+
+
+# import catalog.tests.init_db
+# from importlib import reload
+# reload(catalog.tests.init_db).init_books()

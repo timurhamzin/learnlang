@@ -31,7 +31,8 @@ class Book(models.Model):
 
     source_language = models.ForeignKey('Language', on_delete=models.SET_NULL, blank=True, null=True)
 
-    text = models.TextField(help_text='Enter the original book text')
+    text = models.TextField(help_text='Enter the original book text', null=True)
+    text_with_translation = models.TextField(help_text='Source text with interjected translations.', null=True)
 
     def __str__(self):
         """String for representing the Model object."""
