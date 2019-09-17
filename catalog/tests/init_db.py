@@ -115,19 +115,26 @@ def init_genre():
         name='Test genre',
     )
 
-def init_books():
-    book = Book.objects.create(
-        title='My test book',
-        author=init_author(),
-        summary='test summary',
-        isbn='1111111111111',
-        source_language=Language.objects.filter(name='English').first(),
-        text='My test text. Two sentences.'
-    )
-    book.genre.set((init_genre(),))
+def init_books(delete_all):
+    if delete_all:
+        Book.objects.all().delete()
+    if len(Book.objects.all()) > 0:
+        book = Book.objects.all().first()
+    else:
+        book = Book.objects.create(
+            title='My test book',
+            author=init_author(),
+            summary='test summary',
+            isbn='1111111111111',
+            source_language=Language.objects.filter(name='English').first(),
+            text='My test text. Two sentences.'
+        )
+        book.genre.set((init_genre(),))
+        book.save()
     user = User.objects.get(pk=1)
-    book.text_with_translation = translate_in_place(book, user)
+    book.text_with_translation, translate, translation_result_code = translate_in_place(book, user)
     book.save()
+    return book.text_with_translation, translate, translation_result_code
 
 def translate_in_place(book, user):
     from yandex_translate import YandexTranslate
@@ -136,13 +143,33 @@ def translate_in_place(book, user):
     # print('Translate directions:', translate.directions)
     # print('Detect language:', translate.detect('Привет, мир!'))
     # print('Translate:', translate.translate('Привет, мир!', 'ru-en'))  # or just 'en'
-    # from_lang = translate.detect(book.text)
-    from_lang = 'en'
+
+    if book.source_language is None:
+        from_lang = translate.detect(book.text)
+        book.source_language = Language.objects.filter(source_language=from_lang).first()
+        book.save()
+    from_lang = book.source_language.language_code
     to_lang = UserSettings.objects.filter(user=user).first().default_translation_language.language_code
-    result = translate.translate(book.text, f'{from_lang}-{to_lang}')
-    return result
+    sentences = split_text_by_sentences(book.text)
+    text_with_translation = ''
+    translate_directions = f'{from_lang}-{to_lang}'
+    translation_result_code = 200
+    for sentence in sentences:
+        translation_result = translate.translate(sentence, translate_directions)
+        if translation_result['code'] != 200:
+            translation_result_code = translation_result.code
+        text_with_translation = '\n'.join([text_with_translation, sentence])
+        text_with_translation = '\n'.join([text_with_translation, translation_result['text'][0], ''])
+
+    return text_with_translation, translate, translation_result_code
+
+
+def split_text_by_sentences(text):
+    import re
+    sentences = re.split('(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
+    return sentences
 
 
 # import catalog.tests.init_db
 # from importlib import reload
-# reload(catalog.tests.init_db).init_books()
+# reload(catalog.tests.init_db).init_books(True)
