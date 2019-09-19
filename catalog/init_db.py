@@ -1,10 +1,11 @@
+from datetime import datetime
 from django.contrib.auth.models import User
 from user.models import UserSettings
 from catalog.models import Language, Book, Author, Genre
 from django.test import TestCase, SimpleTestCase
 
+
 def init_langs():
-    Language.objects.all().delete()
     Language.objects.create(name='Azerbaijani', language_code='az')
     Language.objects.create(name='Malayalam', language_code='ml')
     Language.objects.create(name='Albanian', language_code='sq')
@@ -100,23 +101,25 @@ def init_langs():
     Language.objects.create(name='Malay', language_code='ms')
 
 
-from datetime import datetime
-
 def init_author():
     return  Author.objects.create(
         date_of_birth=datetime.strptime('01.01.2001', '%d.%m.%Y'),
-        date_of_death = datetime.strptime('01.01.2021', '%d.%m.%Y'),
+        date_of_death=datetime.strptime('01.01.2021', '%d.%m.%Y'),
         first_name="Test",
-        last_name = "Author"
+        last_name="Author"
     )
+
 
 def init_genre():
     return Genre.objects.create(
         name='Test genre',
     )
 
-def init_books(delete_all):
+
+def init(delete_all):
     if delete_all:
+        Language.objects.all().delete()
+        init_langs()
         Book.objects.all().delete()
     if len(Book.objects.all()) > 0:
         book = Book.objects.all().first()
@@ -126,15 +129,15 @@ def init_books(delete_all):
             author=init_author(),
             summary='test summary',
             isbn='1111111111111',
-            source_language=Language.objects.filter(name='English').first(),
             text='My test text. Two sentences.'
         )
         book.genre.set((init_genre(),))
         book.save()
     user = User.objects.get(pk=1)
-    book.text_with_translation, translate, translation_result_code = translate_in_place(book, user)
+    book.text_with_translation, translate, book.translation_problems = translate_in_place(book, user, True)
     book.save()
-    return book.text_with_translation, translate, translation_result_code
+    return book.text_with_translation, translate, book.translation_problems
+
 
 def translate_in_place(book, user, set_book_langs_if_none: bool):
     from yandex_translate import YandexTranslate
@@ -143,31 +146,39 @@ def translate_in_place(book, user, set_book_langs_if_none: bool):
     # print('Translate directions:', translate.directions)
     # print('Detect language:', translate.detect('Привет, мир!'))
     # print('Translate:', translate.translate('Привет, мир!', 'ru-en'))  # or just 'en'
-
-    if book.source_language is None:
+    if not book.source_language:
         from_lang = translate.detect(book.text)
         if set_book_langs_if_none:
-            book.source_language = Language.objects.filter(source_language=from_lang).first()
-            book.save()
-    from_lang = book.source_language.language_code
-    if book.target_language is None:
-        to_lang = UserSettings.objects.filter(user=user).first().default_translation_language.language_code
+            book.source_language = Language.objects.filter(language_code=from_lang).first()
+            # book.save()
+    else:
+        from_lang = book.source_language.language_code
+
+    if not book.translation_language:
+        default_lang = UserSettings.objects.filter(user=user).first().default_translation_language
+        if default_lang:
+            to_lang = default_lang.language_code
+        else:
+            to_lang = 'fr'
         if set_book_langs_if_none:
-            book.source_language = Language.objects.filter(source_language=from_lang).first()
-            book.save()
+            book.translation_language = Language.objects.filter(language_code=to_lang).first()
+            # book.save()
+    else:
+        to_lang = book.translation_language.language_code
 
     sentences = split_text_by_sentences(book.text)
     text_with_translation = ''
+    translation_problems = ''
     translate_directions = f'{from_lang}-{to_lang}'
-    translation_result_code = 200
     for sentence in sentences:
         translation_result = translate.translate(sentence, translate_directions)
         if translation_result['code'] != 200:
-            translation_result_code = translation_result.code
+            translation_problems = '\n'.join([translation_problems, translation_result['code']])
+            translation_problems = '\n'.join([translation_problems, sentence])
+            translation_problems = '\n'.join([translation_problems, translation_result['text'][0], ''])
         text_with_translation = '\n'.join([text_with_translation, sentence])
         text_with_translation = '\n'.join([text_with_translation, translation_result['text'][0], ''])
-
-    return text_with_translation, translate, translation_result_code
+    return text_with_translation, translate, translation_problems
 
 
 def split_text_by_sentences(text):
@@ -176,6 +187,6 @@ def split_text_by_sentences(text):
     return sentences
 
 
-# import catalog.tests.init_db
+# import catalog.init_db
 # from importlib import reload
-# _, tr, _ = reload(catalog.tests.init_db).init_books(True)
+# _, tr, _ = reload(catalog.init_db).init_books(True)

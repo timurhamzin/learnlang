@@ -1,4 +1,5 @@
 import datetime
+from catalog.models import Book
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -46,3 +47,11 @@ class RenewBookModelForm(ModelForm):
         fields = ['due_back']
         labels = {'due_back': _('Renewal date')}
         help_texts = {'due_back': _('Enter a date between now and 4 weeks (default 3).')}
+
+
+class BookForm(forms.ModelForm):
+    class Meta:
+        model = Book
+        exclude = ('text_with_translation', 'translation_problems',)
+
+

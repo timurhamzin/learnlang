@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-
+from catalog.forms import BookForm
 # Create your views here.
 
 from catalog.models import Book, Author, BookInstance, Genre, Language
@@ -146,6 +146,7 @@ from django.urls import reverse_lazy
 
 from catalog.models import Author
 from catalog.models import Book
+from catalog import forms
 
 
 class AuthorCreate(PermissionRequiredMixin, CreateView):
@@ -165,21 +166,44 @@ class AuthorDelete(PermissionRequiredMixin, DeleteView):
     permission_required = 'catalog.can_mark_returned'
     model = Author
     success_url = reverse_lazy('authors')
-    
+
 
 class BookCreate(PermissionRequiredMixin, CreateView):
     permission_required = 'catalog.can_mark_returned'
     model = Book
-    fields = '__all__'
+    form_class = BookForm
     # initial = {'date_of_death': '05/01/2018'}
+
+    def form_valid(self, form):
+        result = super(BookCreate, self).form_valid(form)
+        book = self.object
+        if result:
+            from catalog.init_db import translate_in_place
+            book.text_with_translation, translate, book.translation_problems = \
+                translate_in_place(book, self.request.user, True)
+            # book.save()
+        return result
 
 
 class BookUpdate(PermissionRequiredMixin, UpdateView):
     permission_required = 'catalog.can_mark_returned'
     model = Book
-    fields = '__all__'
-    # fields = ['first_name', 'last_name', 'date_of_birth', 'date_of_death']
+    form_class = BookForm
 
+    def form_valid(self, form):
+        book = self.object
+        from catalog.init_db import translate_in_place
+        book.text_with_translation, translate, book.translation_problems = \
+            translate_in_place(book, self.request.user, True)
+        # book.save()
+        return super(BookUpdate, self).form_valid(form)
+
+    # def post(self, request, *args, **kwargs):
+    #     book = self.object
+    #     from catalog.init_db import translate_in_place
+    #     book.text_with_translation, translate, book.translation_problems = \
+    #         translate_in_place(book, self.request.user, True)
+    #     return super(BookUpdate, self).post(request, *args, **kwargs)
 
 class BookDelete(PermissionRequiredMixin, DeleteView):
     permission_required = 'catalog.can_mark_returned'

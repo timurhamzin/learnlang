@@ -29,10 +29,15 @@ class Book(models.Model):
     # Genre class has already been defined so we can specify the object above.
     genre = models.ManyToManyField(Genre, help_text='Select a genre for this book')
 
-    source_language = models.ForeignKey('Language', on_delete=models.SET_NULL, blank=True, null=True)
+    source_language = models.ForeignKey('Language', on_delete=models.SET_NULL,
+                                        related_name='source_language', blank=True, null=True)
+    translation_language = models.OneToOneField('Language', on_delete=models.SET_NULL,
+                                                related_name='translation_language', blank=True, null=True)
 
     text = models.TextField(help_text='Enter the original book text', null=True)
     text_with_translation = models.TextField(help_text='Source text with interjected translations.', null=True)
+    translation_problems = models.TextField(help_text='Problems encountered during translation (code, source, result).',
+                                            null=True)
 
     def __str__(self):
         """String for representing the Model object."""
