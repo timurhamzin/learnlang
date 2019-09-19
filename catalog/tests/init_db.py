@@ -136,7 +136,7 @@ def init_books(delete_all):
     book.save()
     return book.text_with_translation, translate, translation_result_code
 
-def translate_in_place(book, user):
+def translate_in_place(book, user, set_book_langs_if_none: bool):
     from yandex_translate import YandexTranslate
     translate = YandexTranslate('trnsl.1.1.20181030T164747Z.50350640be185f5d.a9c2d0892171111c7027edd85669141908d3301a')
     # print('Languages:', translate.langs)
@@ -146,10 +146,16 @@ def translate_in_place(book, user):
 
     if book.source_language is None:
         from_lang = translate.detect(book.text)
-        book.source_language = Language.objects.filter(source_language=from_lang).first()
-        book.save()
+        if set_book_langs_if_none:
+            book.source_language = Language.objects.filter(source_language=from_lang).first()
+            book.save()
     from_lang = book.source_language.language_code
-    to_lang = UserSettings.objects.filter(user=user).first().default_translation_language.language_code
+    if book.target_language is None:
+        to_lang = UserSettings.objects.filter(user=user).first().default_translation_language.language_code
+        if set_book_langs_if_none:
+            book.source_language = Language.objects.filter(source_language=from_lang).first()
+            book.save()
+
     sentences = split_text_by_sentences(book.text)
     text_with_translation = ''
     translate_directions = f'{from_lang}-{to_lang}'
@@ -172,4 +178,4 @@ def split_text_by_sentences(text):
 
 # import catalog.tests.init_db
 # from importlib import reload
-# reload(catalog.tests.init_db).init_books(True)
+# _, tr, _ = reload(catalog.tests.init_db).init_books(True)

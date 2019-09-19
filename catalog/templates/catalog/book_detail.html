@@ -10,21 +10,21 @@
   <h1>Title: {{ book.title }}</h1>
 
   <p><strong>Author:</strong> <a href="{{ book.author.get_absolute_url }}">{{ book.author }}</a></p>
-  <p><strong>Summary:</strong> {{ book.summary }}</p>
-  <p><strong>ISBN:</strong> {{ book.isbn }}</p>
-  <p><strong>Source language:</strong> {{ book.source_language }}</p>
-  <p><strong>Translation language:</strong> {{ book.translation_language }}</p>
   <p><strong>Genre:</strong>
     {% for genre in book.genre.all %}
       {{ genre }}
       {% if not forloop.last %}, {% endif %}
     {% endfor %}</p>
+  <p><strong>Summary:</strong> {{ book.summary }}</p>
+  <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+  <p><strong>Source language:</strong> {{ book.source_language }}</p>
+  <p><strong>Translation language:</strong> {{ book.translation_language }}</p>
 
   <p style="padding-bottom: 0px; padding-top:10px"><strong>Text:<br></strong></p>
   <p> {{ book.text }}</p>
 
   <p style="padding-bottom: 0px; padding-top:10px"><strong>Text with translation:<br></strong></p>
-  <p> {{ book.text_with_translation }}</p>
+  <p><pre> {{ book.text_with_translation }} </pre></p>
 
 
   <div style="margin-left:20px;margin-top:20px">
