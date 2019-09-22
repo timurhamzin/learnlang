@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse # Used to generate URLs by reversing the URL patterns
 import uuid # Required for unique book instances
 from datetime import date
+from django.utils.safestring import mark_safe
 
 # Create your models here.
 class Genre(models.Model):
@@ -35,9 +36,17 @@ class Book(models.Model):
                                                 related_name='translation_language', blank=True, null=True)
 
     text = models.TextField(help_text='Enter the original book text', null=True)
-    text_with_translation = models.TextField(help_text='Source text with interjected translations.', null=True)
+    text_with_translation = models.TextField(help_text='Source text with interjected translations.',
+                                             blank=True, null=True)
     translation_problems = models.TextField(help_text='Problems encountered during translation (code, source, result).',
-                                            null=True)
+                                            blank=True, null=True)
+
+    translate_on_update = models.BooleanField(help_text=mark_safe(
+        'Update translation on book update. ' +
+        '<span class="text-danger">Any changes made to translation manually will be discarded</span>'),
+        default=False)
+
+    sound = models.FileField(blank=True)
 
     def __str__(self):
         """String for representing the Model object."""

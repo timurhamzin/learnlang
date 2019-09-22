@@ -1,5 +1,5 @@
 {% extends "base_generic.html" %}
-
+{% load book_sound_to_url %}
 {% block content %}
   {% if perms.catalog.can_mark_returned %}
     <a href="{% url 'book_create' %}">Create</a> /
@@ -19,9 +19,21 @@
   <p><strong>ISBN:</strong> {{ book.isbn }}</p>
   <p><strong>Source language:</strong> {{ book.source_language }}</p>
   <p><strong>Translation language:</strong> {{ book.translation_language }}</p>
+  <p><strong>Sound:</strong>
+    {% if book.sound %}
+      <audio controls>
+        <source src=
+                "{{ book.sound|book_sound_to_url }}"
+                type="audio/mp3">
+        Your browser does not support the audio element.
+      </audio>
+    {% else %}
+      no file
+    {% endif %}
+  </p>
 
   <p style="padding-bottom: 0px; padding-top:10px"><strong>Text:<br></strong></p>
-  <p> {{ book.text }}</p>
+  <p><pre> {{ book.text }} </pre></p>
 
   <p style="padding-bottom: 0px; padding-top:10px"><strong>Text with translation:<br></strong></p>
   <p><pre> {{ book.text_with_translation }} </pre></p>

@@ -134,9 +134,15 @@ def init(delete_all):
         book.genre.set((init_genre(),))
         book.save()
     user = User.objects.get(pk=1)
-    book.text_with_translation, translate, book.translation_problems = translate_in_place(book, user, True)
+    book.text_with_translation, translate, book.translation_problems, result_file_path = \
+        translate_in_place(book, user, True)
     book.save()
-    return book.text_with_translation, translate, book.translation_problems
+    return book.text_with_translation, translate, book.translation_problems, result_file_path
+
+
+from gtts import gTTS
+import os
+from django.conf import settings
 
 
 def translate_in_place(book, user, set_book_langs_if_none: bool):
@@ -146,6 +152,7 @@ def translate_in_place(book, user, set_book_langs_if_none: bool):
     # print('Translate directions:', translate.directions)
     # print('Detect language:', translate.detect('Привет, мир!'))
     # print('Translate:', translate.translate('Привет, мир!', 'ru-en'))  # or just 'en'
+
     if not book.source_language:
         from_lang = translate.detect(book.text)
         if set_book_langs_if_none:
@@ -170,15 +177,65 @@ def translate_in_place(book, user, set_book_langs_if_none: bool):
     text_with_translation = ''
     translation_problems = ''
     translate_directions = f'{from_lang}-{to_lang}'
+    sentence_i = 0
+
+    book_path = os.path.join(settings.BASE_DIR, settings.MEDIA_ROOT, 'catalog', 'book', str(book.id))
+    split_path = os.path.join(book_path, 'split')
     for sentence in sentences:
+        # save mp3 file
+        extension = 'mp3'
+        sentence_i += 1
+        f_src_path = os.path.join(split_path, str(sentence_i) + '_src.' + extension)
+        os.makedirs(split_path, exist_ok=True)
+        f_trg_path = os.path.join(split_path, str(sentence_i) + '_trg.' + extension)
+        tts = gTTS(text=sentence, lang=from_lang, slow=True)
+        tts.save(f_src_path)
+
         translation_result = translate.translate(sentence, translate_directions)
+        sentence_translated = translation_result['text'][0]
         if translation_result['code'] != 200:
             translation_problems = '\n'.join([translation_problems, translation_result['code']])
             translation_problems = '\n'.join([translation_problems, sentence])
-            translation_problems = '\n'.join([translation_problems, translation_result['text'][0], ''])
+            translation_problems = '\n'.join([translation_problems, sentence_translated, ''])
         text_with_translation = '\n'.join([text_with_translation, sentence])
-        text_with_translation = '\n'.join([text_with_translation, translation_result['text'][0], ''])
-    return text_with_translation, translate, translation_problems
+        text_with_translation = '\n'.join([text_with_translation, sentence_translated, ''])
+        tts = gTTS(text=sentence_translated, lang=to_lang)
+        tts.save(f_trg_path)
+    result_file_path = join_sound_files(split_path, os.path.join(book_path, 'joint'), book.title, extension, False)
+    return text_with_translation, translate, translation_problems, result_file_path
+
+
+def join_sound_files(src_fld, trg_fld, result_file_name, extension, use_pydub):
+    result_file_path = os.path.join(trg_fld, result_file_name + "." + extension)
+    if use_pydub:
+        # has some system dependencies (check out pydub gihub page)
+        from pydub import AudioSegment
+
+        result_file = None
+        for f in os.listdir(src_fld):
+            # f_full = os.path.abspath(os.path.join(src_fld, f))
+            f_full = os.path.join(src_fld, f)
+            if f.endswith(extension):
+                if result_file:
+                    result_file = result_file + AudioSegment.from_wav(f_full)
+                else:
+                    result_file = AudioSegment.from_wav(f_full)
+
+        # writing mp3 files is a one liner
+        if result_file:
+            os.makedirs(trg_fld, exist_ok=True)
+            result_file.export(os.path.join(trg_fld, result_file_name))  #, format="mp3")
+    else:
+        if not os.path.isdir(trg_fld):
+            os.makedirs(trg_fld, exist_ok=True)
+        # run system command to concatenate files. mac OS is supposed,
+        # edit code to run on Windows (e. g. "copy" instead of cat, but not tested)
+        # e.g.: cat *.mp3 > ../join/join.mp3
+        command = f'cat {os.path.join(src_fld, "*." + extension)} > '
+        command += f'"{os.path.join(trg_fld, result_file_name + "." + extension)}"'
+        os.system(command)
+    if os.path.isfile(result_file_path):
+        return result_file_path
 
 
 def split_text_by_sentences(text):

@@ -52,6 +52,6 @@ class RenewBookModelForm(ModelForm):
 class BookForm(forms.ModelForm):
     class Meta:
         model = Book
-        exclude = ('text_with_translation', 'translation_problems',)
+        exclude = ('translation_problems',)
 
 
