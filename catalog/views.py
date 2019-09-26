@@ -168,13 +168,15 @@ class AuthorDelete(PermissionRequiredMixin, DeleteView):
     success_url = reverse_lazy('authors')
 
 
+from django.conf import settings
+
 def form_valid_bookupdate(self, form):
     self.object = Book(sound=self.get_form_kwargs().get('files').get('sound', None))
     self.object = form.save(commit=False)
     book = self.object
     if book.translate_on_update:
         from catalog.init_db import translate_in_place
-        book.text_with_translation, translate, book.translation_problems, book.sound = \
+        book.text_with_translation, translate, book.translation_problems = \
             translate_in_place(book, self.request.user, True)
     return super(type(self), self).form_valid(form)
 

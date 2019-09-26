@@ -7,4 +7,8 @@ whitenoise==4.1.2
 yandex.translate
 gTTS==2.0.4
 pydub==0.23.1
-simpleaudio=1.0.2
+simpleaudio==1.0.2
+django-cleanup==4.0.0
+nltk==3.4.5
+mutagen==1.42.0
+# may need to run nltk.download('punkt') after installing nltk

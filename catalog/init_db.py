@@ -134,15 +134,16 @@ def init(delete_all):
         book.genre.set((init_genre(),))
         book.save()
     user = User.objects.get(pk=1)
-    book.text_with_translation, translate, book.translation_problems, result_file_path = \
+    book.text_with_translation, translate, book.translation_problems = \
         translate_in_place(book, user, True)
     book.save()
-    return book.text_with_translation, translate, book.translation_problems, result_file_path
+    return book.text_with_translation, translate, book.translation_problems
 
 
 from gtts import gTTS
 import os
 from django.conf import settings
+import shutil
 
 
 def translate_in_place(book, user, set_book_langs_if_none: bool):
@@ -174,35 +175,42 @@ def translate_in_place(book, user, set_book_langs_if_none: bool):
         to_lang = book.translation_language.language_code
 
     sentences = split_text_by_sentences(book.text)
-    text_with_translation = ''
-    translation_problems = ''
-    translate_directions = f'{from_lang}-{to_lang}'
-    sentence_i = 0
+    if sentences:
+        text_with_translation = ''
+        translation_problems = ''
+        translate_directions = f'{from_lang}-{to_lang}'
+        sentence_i = 0
 
-    book_path = os.path.join(settings.BASE_DIR, settings.MEDIA_ROOT, 'catalog', 'book', str(book.id))
-    split_path = os.path.join(book_path, 'split')
-    for sentence in sentences:
-        # save mp3 file
-        extension = 'mp3'
-        sentence_i += 1
-        f_src_path = os.path.join(split_path, str(sentence_i) + '_src.' + extension)
-        os.makedirs(split_path, exist_ok=True)
-        f_trg_path = os.path.join(split_path, str(sentence_i) + '_trg.' + extension)
-        tts = gTTS(text=sentence, lang=from_lang, slow=True)
-        tts.save(f_src_path)
+        book_path = os.path.join(settings.BASE_DIR, settings.MEDIA_ROOT, 'catalog', 'book', str(book.id))
+        split_path = os.path.join(book_path, 'split')
+        for sentence in sentences:
+            # save mp3 file
+            extension = 'mp3'
+            sentence_i += 1
+            file_base_name = f'{sentence_i:06}'
+            f_src_path = os.path.join(split_path, file_base_name + '_02_src.' + extension)
+            # if not os.path.isfile(f_src_path):
+            os.makedirs(split_path, exist_ok=True)
+            f_trg_path = os.path.join(split_path, file_base_name + '_01_trg.' + extension)
+            tts = gTTS(text=sentence, lang=from_lang, slow=True)
+            tts.save(f_src_path)
 
-        translation_result = translate.translate(sentence, translate_directions)
-        sentence_translated = translation_result['text'][0]
-        if translation_result['code'] != 200:
-            translation_problems = '\n'.join([translation_problems, translation_result['code']])
-            translation_problems = '\n'.join([translation_problems, sentence])
-            translation_problems = '\n'.join([translation_problems, sentence_translated, ''])
-        text_with_translation = '\n'.join([text_with_translation, sentence])
-        text_with_translation = '\n'.join([text_with_translation, sentence_translated, ''])
-        tts = gTTS(text=sentence_translated, lang=to_lang)
-        tts.save(f_trg_path)
-    result_file_path = join_sound_files(split_path, os.path.join(book_path, 'joint'), book.title, extension, False)
-    return text_with_translation, translate, translation_problems, result_file_path
+            translation_result = translate.translate(sentence, translate_directions)
+            sentence_translated = translation_result['text'][0]
+            if translation_result['code'] != 200:
+                translation_problems = '\n'.join([translation_problems, translation_result['code']])
+                translation_problems = '\n'.join([translation_problems, sentence])
+                translation_problems = '\n'.join([translation_problems, sentence_translated])
+            text_with_translation = '\n'.join([text_with_translation, sentence_translated])
+            text_with_translation = '\n'.join([text_with_translation, sentence, ''])
+            tts = gTTS(text=sentence_translated, lang=to_lang)
+            tts.save(f_trg_path)
+            book.text_with_translation = text_with_translation
+            book.save()
+        # result_file_path = join_sound_files(split_path, os.path.join(book_path, 'joint'), book.title, extension, False)
+        # if del_split_dir:
+        #     shutil.rmtree(split_path)
+        return text_with_translation, translate, translation_problems # , result_file_path
 
 
 def join_sound_files(src_fld, trg_fld, result_file_name, extension, use_pydub):
@@ -235,15 +243,25 @@ def join_sound_files(src_fld, trg_fld, result_file_name, extension, use_pydub):
         command += f'"{os.path.join(trg_fld, result_file_name + "." + extension)}"'
         os.system(command)
     if os.path.isfile(result_file_path):
+        if settings.MEDIA_ROOT in result_file_path:
+            root = os.path.join(settings.MEDIA_ROOT, '') # append trailing slash if not there
+            result_file_path = result_file_path[len(root):]
         return result_file_path
 
 
-def split_text_by_sentences(text):
+def split_text_by_sentences_re(text):
     import re
     sentences = re.split('(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
     return sentences
 
 
+def split_text_by_sentences(text):
+    import nltk.data
+    tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+    # print('\n-----\n'.join(tokenizer.tokenize(text)))
+    return tokenizer.tokenize(text)
+
 # import catalog.init_db
 # from importlib import reload
-# _, tr, _ = reload(catalog.init_db).init_books(True)
+# text_with_translation, translate, translation_problems, result_file_path = reload(catalog.init_db).init(True)
+
