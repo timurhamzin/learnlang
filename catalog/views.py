@@ -146,7 +146,6 @@ from django.urls import reverse_lazy
 
 from catalog.models import Author
 from catalog.models import Book
-from catalog import forms
 
 
 class AuthorCreate(PermissionRequiredMixin, CreateView):
@@ -175,9 +174,9 @@ def form_valid_bookupdate(self, form):
     self.object = form.save(commit=True)
     book = self.object
     if book.translate_on_update:
-        from catalog.init_db import translate_in_place
+        from catalog.init_db import translate_book
         book.text_with_translation, translate, book.translation_problems, self.object.sound = \
-            translate_in_place(book, self.request.user, True)
+            translate_book(book, self.request.user, True)
     return super(type(self), self).form_valid(form)
 
 
