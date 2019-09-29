@@ -147,18 +147,10 @@ import shutil
 
 
 def translate_in_place(book, user, set_book_langs_if_none: bool):
-    from yandex_translate import YandexTranslate
-    translate = YandexTranslate('trnsl.1.1.20181030T164747Z.50350640be185f5d.a9c2d0892171111c7027edd85669141908d3301a')
-    # print('Languages:', translate.langs)
-    # print('Translate directions:', translate.directions)
-    # print('Detect language:', translate.detect('Привет, мир!'))
-    # print('Translate:', translate.translate('Привет, мир!', 'ru-en'))  # or just 'en'
-
     if not book.source_language:
         from_lang = translate.detect(book.text)
         if set_book_langs_if_none:
             book.source_language = Language.objects.filter(language_code=from_lang).first()
-            # book.save()
     else:
         from_lang = book.source_language.language_code
 
@@ -170,10 +162,16 @@ def translate_in_place(book, user, set_book_langs_if_none: bool):
             to_lang = 'fr'
         if set_book_langs_if_none:
             book.translation_language = Language.objects.filter(language_code=to_lang).first()
-            # book.save()
     else:
         to_lang = book.translation_language.language_code
 
+    # print('Languages:', translate.langs)
+    # print('Translate directions:', translate.directions)
+    # print('Detect language:', translate.detect('Привет, мир!'))
+    # print('Translate:', translate.translate('Привет, мир!', 'ru-en'))  # or just 'en'
+
+    from yandex_translate import YandexTranslate
+    translate = YandexTranslate('trnsl.1.1.20181030T164747Z.50350640be185f5d.a9c2d0892171111c7027edd85669141908d3301a')
     sentences = split_text_by_sentences(book.text)
     if sentences:
         text_with_translation = ''
@@ -184,12 +182,10 @@ def translate_in_place(book, user, set_book_langs_if_none: bool):
         book_path = os.path.join(settings.BASE_DIR, settings.MEDIA_ROOT, 'catalog', 'book', str(book.id))
         split_path = os.path.join(book_path, 'split')
         for sentence in sentences:
-            # save mp3 file
             extension = 'mp3'
             sentence_i += 1
             file_base_name = f'{sentence_i:06}'
             f_src_path = os.path.join(split_path, file_base_name + '_02_src.' + extension)
-            # if not os.path.isfile(f_src_path):
             os.makedirs(split_path, exist_ok=True)
             f_trg_path = os.path.join(split_path, file_base_name + '_01_trg.' + extension)
             tts = gTTS(text=sentence, lang=from_lang, slow=True)
@@ -203,14 +199,14 @@ def translate_in_place(book, user, set_book_langs_if_none: bool):
                 translation_problems = '\n'.join([translation_problems, sentence_translated])
             text_with_translation = '\n'.join([text_with_translation, sentence_translated])
             text_with_translation = '\n'.join([text_with_translation, sentence, ''])
-            tts = gTTS(text=sentence_translated, lang=to_lang)
+            tts = gTTS(text=sentence_translated, lang=to_lang, slow=False)
             tts.save(f_trg_path)
             book.text_with_translation = text_with_translation
             book.save()
-        # result_file_path = join_sound_files(split_path, os.path.join(book_path, 'joint'), book.title, extension, False)
+        result_file_path = join_sound_files(split_path, os.path.join(book_path, 'joint'), book.title, extension, False)
         # if del_split_dir:
         #     shutil.rmtree(split_path)
-        return text_with_translation, translate, translation_problems # , result_file_path
+        return text_with_translation, translate, translation_problems, result_file_path
 
 
 def join_sound_files(src_fld, trg_fld, result_file_name, extension, use_pydub):
