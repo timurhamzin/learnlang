@@ -2,9 +2,19 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from catalog.forms import BookForm
-# Create your views here.
-
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
 from catalog.models import Book, Author, BookInstance, Genre, Language
+from catalog.init_db import make_lrc_files
+import datetime
+from django.contrib.auth.decorators import permission_required
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from catalog.forms import RenewBookModelForm
+import os
+from django.conf import settings
+
 
 
     # @login_required
@@ -53,6 +63,14 @@ class BookDetailView(generic.DetailView):
     fields = ['title', 'author', 'isbn', 'source_language', 'translation_language',
               'genre', 'text']
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        lrc_archive = 'no subtitles'
+        if self.object.lrc_archive:
+            lrc_archive = os.path.basename(self.object.lrc_archive.path)
+        context['lrc_archive'] = lrc_archive
+        return context
+
 
 class AuthorListView(generic.ListView):
     model = Author
@@ -99,14 +117,6 @@ class LoanedBooksListView(PermissionRequiredMixin, generic.ListView):
         return BookInstance.objects.filter(status__exact='o').order_by('due_back')
 
 
-import datetime
-
-from django.contrib.auth.decorators import permission_required
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from catalog.forms import RenewBookForm, RenewBookModelForm
-
 @permission_required('catalog.can_mark_returned')
 def renew_book_librarian(request, pk):
     book_instance = get_object_or_404(BookInstance, pk=pk)
@@ -140,14 +150,6 @@ def renew_book_librarian(request, pk):
     return render(request, 'catalog/book_renew_librarian.html', context)
 
 
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
-
-
-from catalog.models import Author
-from catalog.models import Book
-
-
 class AuthorCreate(PermissionRequiredMixin, CreateView):
     permission_required = 'catalog.can_mark_returned'
     model = Author
@@ -167,16 +169,18 @@ class AuthorDelete(PermissionRequiredMixin, DeleteView):
     success_url = reverse_lazy('authors')
 
 
-from django.conf import settings
-
 def form_valid_bookupdate(self, form):
     self.object = Book(sound=self.get_form_kwargs().get('files').get('sound', None))
     self.object = form.save(commit=True)
     book = self.object
     if book.translate_on_update:
         from catalog.init_db import translate_book
-        book.text_with_translation, translate, book.translation_problems, self.object.sound = \
+        book.text_with_translation, translate, book.translation_problems, book.sound = \
             translate_book(book, self.request.user, True)
+    lrc_archive = make_lrc_files(book)
+    lrc_archive = lrc_archive.replace(os.path.join(settings.MEDIA_ROOT, ''), '')
+    book.lrc_archive = lrc_archive
+    book.save()
     return super(type(self), self).form_valid(form)
 
 

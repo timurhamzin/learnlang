@@ -45,17 +45,17 @@ class Book(models.Model):
                                             blank=True, null=True)
 
     translate_on_update = models.BooleanField(help_text=mark_safe(
-        'Update translation on book update. ' +
+        'Update translation. ' +
         '<span class="text-danger">Any changes made to translation manually will be discarded</span>'),
         default=False)
 
     def book_path(instance, filename):
-        # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
         import os
         _, file_extension = os.path.splitext(filename)
         return f'catalog/book/{instance.id}/joint/{instance.title}{file_extension}'
 
     sound = models.FileField(upload_to=book_path, blank=True)
+    lrc_archive = models.FileField(upload_to=book_path, blank=True)
 
     def __str__(self):
         """String for representing the Model object."""

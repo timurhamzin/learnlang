@@ -32,6 +32,13 @@
       no file
     {% endif %}
   </p>
+  <p><strong>Sound with lrc-subtitles:</strong>
+    {% if book.lrc_archive %}
+      <a href="{{ book.lrc_archive.url }}" download="">{{ lrc_archive }}</a>
+    {% else %}
+      no file
+    {% endif %}
+  </p>
 
   <p style="padding-bottom: 0px; padding-top:10px"><strong>Text:<br></strong></p>
   <p><pre> {{ book.text }} </pre></p>

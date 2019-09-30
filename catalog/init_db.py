@@ -7,24 +7,39 @@ from mutagen.mp3 import MP3
 import datetime
 import nltk.data
 import glob
+from zipfile import ZipFile
+import re
 
+
+# Zip the files from given directory that matches the filter
+def zip_files_in_dir(dir_name, zip_file_name, file_filter=lambda x: re.search('.', x)):
+    # create a ZipFile object
+    with ZipFile(zip_file_name, 'w') as zip_obj:
+        # Iterate over all the files in directory
+        for folder_name, sub_folders, file_names in os.walk(dir_name):
+            for file_name in file_names:
+                if file_filter(file_name):
+                    # create complete file path of file in directory
+                    file_path = os.path.join(folder_name, file_name)
+                    # Add file to zip
+                    zip_obj.write(file_path, os.path.basename(file_path))
+    return zip_file_name
 
 def split_text_test():
     from catalog.models import Book
     book = Book.objects.filter(pk=5).first()
-    # book = Book.objects.filter(pk=).first()
-    text = book.text
+    return split_text(book.text)
 
 
 def split_text(text):
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
     result = tokenizer.tokenize(text.replace('...', '$$.'))
     # print('\n-----\n'.join(tokenizer.tokenize(text)))
-    return map(lambda x: x.replace('$$.', '...'), result)
+    return list(map(lambda x: x.replace('$$.', '...'), result))
 
 
-def make_lrc_dict():
-    book, sentences = split_text()
+def make_lrc_dict(book: Book):
+    sentences = split_text(book.text)
     split_fld = path.join(settings.MEDIA_ROOT, 'catalog', 'book', str(book.id), 'split')
     start = 0
     i = 0
@@ -45,11 +60,11 @@ def make_lrc_dict():
             files_it[mm_ss_fffffff] = f'{((i+1)//2 + (i+1)%2):06}'
             start += duration_sec
             i += 1
-    return result, book
+    return result
 
 
-def make_lrc_files():
-    lrc_files_dict, book = make_lrc_dict()
+def make_lrc_files(book):
+    lrc_files_dict = make_lrc_dict(book)
     lrc_dict = lrc_files_dict['lrc']
     files_dict = lrc_files_dict['files']
     split_fld = path.join(settings.MEDIA_ROOT, 'catalog', 'book', str(book.id), 'split')
@@ -69,8 +84,10 @@ def make_lrc_files():
         with open(f'{merge_path}.lrc', "w") as text_file:
             text_file.write(lrc_text)
 
-    # print(str(start))
-    # print(str(MP3(path.join(settings.MEDIA_ROOT, 'catalog', 'book', str(book.id), 'joint', 'Sempé-Goscinny.mp3')).info.length))
+    def include_in_zip(file_name):
+        if file_name.endswith('mp3') or file_name.endswith('lrc'):
+            return True
+    return zip_files_in_dir(join_fld, path.join(join_fld, book.title + '.zip'), include_in_zip)
 
 
 def init_langs():
@@ -362,8 +379,7 @@ def split_text_by_sentences(text):
 
 # import catalog.init_db
 # from importlib import reload
-# text_with_translation, translate, translation_problems, result_file_path = reload(catalog.init_db).init(True)
-# from init_db import split_text
 # from catalog.init_db import *
 # reload(catalog.init_db).split_text()
+# text_with_translation, translate, translation_problems, result_file_path = reload(catalog.init_db).init(True)
 
