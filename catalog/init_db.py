@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
 from django.contrib.auth.models import User
 from user.models import UserSettings
@@ -187,46 +188,88 @@ def init_langs():
 
 
 def init_author():
-    return Author.objects.create(
-        date_of_birth=datetime.strptime('01.01.2001', '%d.%m.%Y'),
-        date_of_death=datetime.strptime('01.01.2021', '%d.%m.%Y'),
+    author = Author.objects.create(
+        date_of_birth=datetime.datetime.strptime('01.01.2001', '%d.%m.%Y'),
+        date_of_death=datetime.datetime.strptime('01.01.2021', '%d.%m.%Y'),
         first_name="Test",
         last_name="Author"
     )
+    return author
 
 
 def init_genre():
-    return Genre.objects.create(
+    genre = Genre.objects.create(
         name='Test genre',
     )
+    return genre
+
+
+def init_user_settings(user):
+    UserSettings.objects.all().delete()
+    us = UserSettings.objects.create(user=user)
+    us.default_translation_language = Language.objects.filter(name='Russian').first()
+    us.save()
+    return us
+
+
+def get_first(of_class, with_prop, prop_value):
+    try:
+        return of_class.objects.filter(**{with_prop: prop_value}).first()
+    except ObjectDoesNotExist:
+        pass
+
+
+def user_settings(user):
+    return get_first(UserSettings, 'user', user)
 
 
 def init(delete_all):
-    if Author.objects.count == 0:
+    user = User.objects.get(pk=1)
+    if not user_settings(user):
+        init_user_settings(user)
+
+    if delete_all:
+        Author.objects.all().delete()
+        Language.objects.all().delete()
+        Book.objects.all().delete()
+        Genre.objects.all().delete()
+        init_langs()
+
+    if Author.objects.count() == 0:
         author = init_author()
     else:
         author = Author.objects.all().first()
-    if Genre.objects.count == 0:
+
+    if Genre.objects.count() == 0:
         genre = init_genre()
     else:
         genre = Genre.objects.all().first()
-    if delete_all:
-        Language.objects.all().delete()
-        init_langs()
-        Book.objects.all().delete()
-    if len(Book.objects.all()) > 0:
-        book = Book.objects.all().first()
-    else:
+
+    if Book.objects.all().count() == 0:
         book = Book.objects.create(
             title='My test book',
             author=author,
             summary='test summary',
-            text="This project will help you to learn a new language without any textbooks or dictionaries.  It automates the process of learning a language, ridding you of all the overhead mechanical work needed in the process. The main problem when learning a new language is you don't understand it, and you can't learn something you don't understand. On the other hand, understanding something is all you need to learn it. This project helps you solve this problem by providing you with a tool to translate books sentence-by-sentence. As the most natural way of learning a language is through hearing, the resulting translation is voiced along with the source text to an mp3 file. The resulting file is served with subtitles to help your utilise your vision as well as your hearing. Subtitles in the form of lrc-files can be played by a number of music-playing pieces of software, available for free (check out lrc wiki-page)."
+            text="This project will help you to learn a new language without any textbooks or dictionaries. " +
+                 "It automates the process of learning a language, ridding you of all the overhead mechanical " +
+                 "work needed in the process. The main problem when learning a new language is you don't " +
+                 "understand it, and you can't learn something you don't understand. On the other hand, " +
+                 "understanding something is all you really need to learn it. This project helps you solve " +
+                 "this problem by providing you with a tool to translate books sentence-by-sentence. " +
+                 "As the most natural way of learning a language is through hearing, the resulting translation " +
+                 "is voiced along with the source text to an mp3 file. The resulting file is served with subtitles " +
+                 "to help your utilise your vision as well as your hearing. Subtitles in the form of lrc-files " +
+                 "can be played by a number of music-playing pieces of software, available for free " +
+                 "(check out lrc wiki-page)."
         )
+        book.save()  # need to save to satisfy Non-null requirement
         book.genre.set((genre,))
+    else:
+        book = Book.objects.all().first()
+        print(Book.objects.all().count())
         book.save()
-    user = User.objects.get(pk=1)
-    book.text_with_translation, translate, book.translation_problems = \
+
+    book.text_with_translation, translate, book.translation_problems, result_file_path = \
         translate_book(book, user, True)
     book.save()
     return book.text_with_translation, translate, book.translation_problems
@@ -355,12 +398,19 @@ def join_sound_files(src_fld, trg_fld, result_file_name, extension, use_pydub):
         # run system command to concatenate files. mac OS is supposed,
         # edit code to run on Windows (e. g. "copy" instead of cat, but not tested)
         # e.g.: cat *.mp3 > ../join/join.mp3
-        command = f'cat {os.path.join(src_fld, "*." + extension)} > '
+        command = f'cat "{os.path.join(src_fld, "*." + extension)}" > '
         command += f'"{os.path.join(trg_fld, result_file_name + "." + extension)}"'
-        os.system(command)
+        resp = os.system(command)
+        if resp != 0:  # failed, try Windows batch command
+            command = f'copy /b "{os.path.join(src_fld, "*." + extension)}" '
+            command += f'"{os.path.join(trg_fld, result_file_name + "." + extension)}"'
+            resp = os.system(command)
+        if resp != 0:
+            print(f'Failed to execute "{command}"')
+
     if os.path.isfile(result_file_path):
         if settings.MEDIA_ROOT in result_file_path:
-            root = os.path.join(settings.MEDIA_ROOT, '') # append trailing slash if not there
+            root = os.path.join(settings.MEDIA_ROOT, '')  # append trailing slash if not there
             result_file_path = result_file_path[len(root):]
         return result_file_path
 
@@ -380,6 +430,9 @@ def split_text_by_sentences(text):
 # import catalog.init_db
 # from importlib import reload
 # from catalog.init_db import *
+# reload(catalog.init_db).init(True)
+
+
 # reload(catalog.init_db).split_text()
 # text_with_translation, translate, translation_problems, result_file_path = reload(catalog.init_db).init(True)
 

@@ -9,6 +9,7 @@ from django.utils.safestring import mark_safe
 class Genre(models.Model):
     """Model representing a book genre."""
     name = models.CharField(max_length=200, help_text='Enter a book genre (e.g. Science Fiction)')
+    # book = models.ManyToManyField('Book', help_text='Select a genre for this book', blank=True)
 
     def __str__(self):
         """String for representing the Model object."""
@@ -31,7 +32,7 @@ class Book(models.Model):
 
     # ManyToManyField used because genre can contain many books. Books can cover many genres.
     # Genre class has already been defined so we can specify the object above.
-    genre = models.ManyToManyField(Genre, help_text='Select a genre for this book')
+    genre = models.ManyToManyField(Genre, help_text='Select a genre for this book', blank=True)
 
     source_language = models.ForeignKey('Language', on_delete=models.SET_NULL,
                                         related_name='source_language', blank=True, null=True)
