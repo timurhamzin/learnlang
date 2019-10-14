@@ -5,30 +5,33 @@ from french_lefff_lemmatizer.french_lefff_lemmatizer import FrenchLefffLemmatize
 
 
 def deconjugate_test():
-    text =  Book.objects.filter(pk=10).first().text
+    text = Book.objects.filter(pk=10).first().text
     print(deconjugate(text))
 
 
 def deconjugate(text):
     # from nltk.corpus import stopwords
     # stop_words = set(stopwords.words('french'))
-    words = word_tokenize(text)[:1000]
+    words = word_tokenize(text)
     lemmatizer = FrenchLefffLemmatizer()
-    words_filtered = []
     words_parsed = []
+    id = 0
+
+    def span(wd, wd_id, disp):
+        return f'<span style="display:{disp};" id="{wd_id}">{wd}</span>'
     for word in words:
+        id += 1
         a_word = False
-        words_parsed.append(word)
+        words_parsed.append(span(word, id, 'inline'))
         lemma = lemmatizer.lemmatize(word.upper(), 'v')
         if lemma == lemma.upper():
             lemma = lemmatizer.lemmatize(word.upper())
         if lemma != lemma.upper():
             a_word = True
         if a_word:
-            words_parsed.append(f'({lemma})')
-            words_filtered.append(word)
-    # return words_filtered[:1000]
-    return TreebankWordDetokenizer().detokenize(words_parsed) #result
+            id += 1
+            words_parsed.append(span(lemma, id, 'none'))
+    return TreebankWordDetokenizer().detokenize(words_parsed)
 
 # import text_parse
 # from importlib import reload

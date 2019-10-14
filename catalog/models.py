@@ -42,6 +42,9 @@ class Book(models.Model):
     text = models.TextField(help_text='Enter the original book text', null=True)
     text_with_translation = models.TextField(help_text='Source text with interjected translations.',
                                              blank=True, null=True)
+    text_deconjugated = models.TextField(help_text='Source html-formatted text with enumerated words ' +
+                                                   'with their hidden deconjugated form next to them.',
+                                         blank=True, null=True)
     translation_problems = models.TextField(help_text='Problems encountered during translation (code, source, result).',
                                             blank=True, null=True)
 

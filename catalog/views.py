@@ -14,7 +14,8 @@ from django.urls import reverse
 from catalog.forms import RenewBookModelForm
 import os
 from django.conf import settings
-
+from text_parse import deconjugate
+from django.views import generic
 
 
     # @login_required
@@ -46,8 +47,6 @@ def index(request):
 
     # Render the HTML template index.html with the data in the context variable
     return render(request, 'index.html', context=context)
-
-from django.views import generic
 
 
 class BookListView(generic.ListView):
@@ -150,6 +149,15 @@ def renew_book_librarian(request, pk):
     return render(request, 'catalog/book_renew_librarian.html', context)
 
 
+@permission_required('catalog.can_mark_returned')
+def book_deconjugated(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+    context = {
+        'book': book,
+    }
+    return render(request, 'catalog/book_deconjugated.html', context=context)
+
+
 class AuthorCreate(PermissionRequiredMixin, CreateView):
     permission_required = 'catalog.can_mark_returned'
     model = Author
@@ -173,6 +181,7 @@ def form_valid_bookupdate(self, form):
     self.object = Book(sound=self.get_form_kwargs().get('files').get('sound', None))
     self.object = form.save(commit=True)
     book = self.object
+    book.text_deconjugated = deconjugate(book.text)
     if book.translate_on_update:
         from catalog.init_db import translate_book
         book.text_with_translation, translate, book.translation_problems, book.sound = \
