@@ -12,18 +12,18 @@ def deconjugate_test():
     print(deconjugate(text, book.source_language))
 
 
-def deconjugate_word(word, lang: Language):
-    if lang.language_code == 'fr':
-        lemmatizer = FrenchLefffLemmatizer()
-        result = lemmatizer.lemmatize(word.upper(), 'v')
-        if result == result.upper():
-            result = lemmatizer.lemmatize(word.upper())
-        if result != result.upper():
-            return result
-    elif lang.language_code == 'en':
-        pass
-    else:
-        pass
+# def deconjugate_word(word, lang: Language):
+#     if lang.language_code == 'fr':
+#         lemmatizer = FrenchLefffLemmatizer()
+#         result = lemmatizer.lemmatize(word.upper(), 'v')
+#         if result == result.upper():
+#             result = lemmatizer.lemmatize(word.upper())
+#         if result != result.upper():
+#             return result
+#     elif lang.language_code == 'en':
+#         pass
+#     else:
+#         pass
 
 
 def deconjugate(text, lang: Language):
@@ -33,16 +33,18 @@ def deconjugate(text, lang: Language):
     nlp = spacy.load(lang.language_code, disable=['parser', 'ner'])
     doc = nlp(text)
 
-    def span(wd, wd_id, disp):
-        return f'<span style="display:{disp};" id="{wd_id}">{wd}</span>'
+    def span(wd, wd_id, css_class=''):
+        css_class = f'class={css_class} ' if css_class else ''
+        return f'<span id="{wd_id}" {css_class}>{wd}</span>'
     id = 0
     words_parsed = []
     for token in doc:
         id += 1
-        words_parsed.append(span(token.text, id, 'inline'))
+        words_parsed.append(span(token.text, id))
         id += 1
-        words_parsed.append(span(token.lemma_, id, 'inline'))
+        words_parsed.append(span(token.lemma_, id, 'hidden_lemma'))
     return TreebankWordDetokenizer().detokenize(words_parsed)
+
 
 # import text_parse
 # from importlib import reload

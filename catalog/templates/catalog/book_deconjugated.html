@@ -10,5 +10,6 @@
 
   <p style="padding-bottom: 0px; padding-top:10px"><strong>Text:<br></strong></p>
   <p>{{ book.text_deconjugated | safe }}</p>
-
+  {% load static %}
+  <script src="{% static 'catalog/js/parse.js' %}"></script>
 {% endblock %}
