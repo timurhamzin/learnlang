@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'catalog',
     'user',
     'django_cleanup',
+    'learnlan',
 ]
 
 MIDDLEWARE = [

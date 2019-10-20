@@ -66,5 +66,9 @@
       </div>
     </div>
   </div>
+    {% load common_tags %}
+    {% autoescape off %}
+    {% include_scripts %}
+    {% endautoescape %}
 </body>
 </html>
