@@ -2,35 +2,46 @@ from catalog.models import Book
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tokenize.treebank import TreebankWordDetokenizer
 from french_lefff_lemmatizer.french_lefff_lemmatizer import FrenchLefffLemmatizer
+from catalog.models import Language
+import spacy
 
 
 def deconjugate_test():
-    text = Book.objects.filter(pk=10).first().text
-    print(deconjugate(text))
+    book = Book.objects.filter(pk=10).first()
+    text = book.text
+    print(deconjugate(text, book.source_language))
 
 
-def deconjugate(text):
+def deconjugate_word(word, lang: Language):
+    if lang.language_code == 'fr':
+        lemmatizer = FrenchLefffLemmatizer()
+        result = lemmatizer.lemmatize(word.upper(), 'v')
+        if result == result.upper():
+            result = lemmatizer.lemmatize(word.upper())
+        if result != result.upper():
+            return result
+    elif lang.language_code == 'en':
+        pass
+    else:
+        pass
+
+
+def deconjugate(text, lang: Language):
     # from nltk.corpus import stopwords
     # stop_words = set(stopwords.words('french'))
-    words = word_tokenize(text)
-    lemmatizer = FrenchLefffLemmatizer()
-    words_parsed = []
-    id = 0
+    # words = word_tokenize(text)
+    nlp = spacy.load(lang.language_code, disable=['parser', 'ner'])
+    doc = nlp(text)
 
     def span(wd, wd_id, disp):
         return f'<span style="display:{disp};" id="{wd_id}">{wd}</span>'
-    for word in words:
+    id = 0
+    words_parsed = []
+    for token in doc:
         id += 1
-        a_word = False
-        words_parsed.append(span(word, id, 'inline'))
-        lemma = lemmatizer.lemmatize(word.upper(), 'v')
-        if lemma == lemma.upper():
-            lemma = lemmatizer.lemmatize(word.upper())
-        if lemma != lemma.upper():
-            a_word = True
-        if a_word:
-            id += 1
-            words_parsed.append(span(lemma, id, 'none'))
+        words_parsed.append(span(token.text, id, 'inline'))
+        id += 1
+        words_parsed.append(span(token.lemma_, id, 'inline'))
     return TreebankWordDetokenizer().detokenize(words_parsed)
 
 # import text_parse

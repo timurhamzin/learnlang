@@ -15,3 +15,6 @@ mutagen==1.42.0
 # may need:
 # nltk.download('punkt')
 # nltk.download('stopwords')
+spacy
+# python -m spacy download fr
+# python -m spacy download --default-timeout=10000 en

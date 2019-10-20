@@ -181,7 +181,7 @@ def form_valid_bookupdate(self, form):
     self.object = Book(sound=self.get_form_kwargs().get('files').get('sound', None))
     self.object = form.save(commit=True)
     book = self.object
-    book.text_deconjugated = deconjugate(book.text)
+    book.text_deconjugated = deconjugate(book.text, book.source_language)
     if book.translate_on_update:
         from catalog.init_db import translate_book
         book.text_with_translation, translate, book.translation_problems, book.sound = \
