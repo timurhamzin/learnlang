@@ -1,1 +1,6 @@
-console.log('Hello 2!')
+$(document).ready(function(){
+//    console.log('span event handler linked')
+    $("span").click(function(){
+        $(this).toggleClass('highlighted_lemma')
+    })
+})

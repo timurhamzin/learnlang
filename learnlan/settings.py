@@ -136,6 +136,7 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static/"),
+    os.path.join(BASE_DIR, "catalog/static/"),
 ]
 
 # Redirect to home URL after login (Default redirects to /accounts/profile/)
@@ -156,3 +157,9 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+CATALOG_DIRECTORY = '/catalog/'
+
+if DEBUG:
+    JQUERY_URL = f'<script src="{os.path.join(STATIC_URL, "js/jquery-3.4.1.js")}"></script>'
+else:
+    JQUERY_URL = '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>'

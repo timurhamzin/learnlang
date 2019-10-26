@@ -40,7 +40,7 @@ def deconjugate(text, lang: Language):
     words_parsed = []
     for token in doc:
         id += 1
-        words_parsed.append(span(token.text, id))
+        words_parsed.append(span(token.text, id), 'visible_lemma')
         id += 1
         words_parsed.append(span(token.lemma_, id, 'hidden_lemma'))
     return TreebankWordDetokenizer().detokenize(words_parsed)

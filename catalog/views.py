@@ -16,7 +16,7 @@ import os
 from django.conf import settings
 from text_parse import deconjugate
 from django.views import generic
-
+from django.urls import resolve
 
     # @login_required
 def index(request):
@@ -149,11 +149,18 @@ def renew_book_librarian(request, pk):
     return render(request, 'catalog/book_renew_librarian.html', context)
 
 
+def app_name(request):
+    return request.resolver_match._func_path.split('.')[0]
+
+
 @permission_required('catalog.can_mark_returned')
 def book_deconjugated(request, pk):
     book = get_object_or_404(Book, pk=pk)
+    # parse_js = f'<script src="{settings.STATIC_URL + resolve(request.path).app_name + "/js/parse.js"}"></script>'
+    parse_js = f'<script src="{settings.STATIC_URL + app_name(request) + "/js/parse.js"}"></script>'
     context = {
         'book': book,
+        'scripts': [settings.JQUERY_URL, parse_js],
     }
     return render(request, 'catalog/book_deconjugated.html', context=context)
 
