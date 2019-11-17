@@ -9,7 +9,8 @@ import spacy
 def deconjugate_test():
     book = Book.objects.filter(pk=10).first()
     text = book.text
-    print(deconjugate(text, book.source_language))
+    book.text_deconjugated = deconjugate(text, book.source_language)
+    print(book.text_deconjugated)
 
 
 # def deconjugate_word(word, lang: Language):
@@ -33,16 +34,21 @@ def deconjugate(text, lang: Language):
     nlp = spacy.load(lang.language_code, disable=['parser', 'ner'])
     doc = nlp(text)
 
-    def span(wd, wd_id, css_class=''):
-        css_class = f'class={css_class} ' if css_class else ''
-        return f'<span id="{wd_id}" {css_class}>{wd}</span>'
-    id = 0
+    # def span(wd, wd_id, css_class=''):
+    #     css_class = f'class={css_class} ' if css_class else ''
+    #     return f'<span id="{wd_id}" {css_class}>{wd}</span>'
+    def span(wd, wd_lemma, css_class=''):
+        css_class = f'class="{css_class}"' if css_class else ''
+        # return f'<span id="{wd_lemma}" {css_class} v-on:click="add">{wd}</span>'
+        return f'<span id="{wd_lemma}" {css_class} v-bind:style="{{opacity:opacity[\'{wd_lemma}\']}}">{wd}</span>'
+    # id = 0
     words_parsed = []
     for token in doc:
-        id += 1
-        words_parsed.append(span(token.text, id), 'visible_lemma')
-        id += 1
-        words_parsed.append(span(token.lemma_, id, 'hidden_lemma'))
+        # id += 1
+        # words_parsed.append(span(token.text, id), 'visible_lemma')
+        words_parsed.append(span(token.text, token.lemma_, ''))
+        # id += 1
+        # words_parsed.append(span(token.lemma_, id, 'hidden_lemma'))
     return TreebankWordDetokenizer().detokenize(words_parsed)
 
 

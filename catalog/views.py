@@ -156,12 +156,12 @@ def app_name(request):
 @permission_required('catalog.can_mark_returned')
 def book_deconjugated(request, pk):
     book = get_object_or_404(Book, pk=pk)
-    # parse_js = f'<script src="{settings.STATIC_URL + resolve(request.path).app_name + "/js/parse.js"}"></script>'
     parse_js = f'<script src="{settings.STATIC_URL + app_name(request) + "/js/parse.js"}"></script>'
     context = {
         'book': book,
-        'scripts': [settings.JQUERY_URL, parse_js],
+        'scripts': [settings.JQUERY_URL, settings.VUE_URL, parse_js],
     }
+    print(book.text_deconjugated)
     return render(request, 'catalog/book_deconjugated.html', context=context)
 
 
@@ -182,6 +182,9 @@ class AuthorDelete(PermissionRequiredMixin, DeleteView):
     permission_required = 'catalog.can_mark_returned'
     model = Author
     success_url = reverse_lazy('authors')
+
+
+from django.utils.safestring import mark_safe
 
 
 def form_valid_bookupdate(self, form):

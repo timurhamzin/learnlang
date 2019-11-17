@@ -1,4 +1,5 @@
 from django import template
+from django.utils.safestring import mark_safe
 from django.conf import settings
 
 register = template.Library()
@@ -15,3 +16,8 @@ def include_scripts(context):
 @register.simple_tag
 def define(the_string):
     return the_string
+
+
+@register.filter
+def return_safe(str_):
+    return mark_safe(str_)

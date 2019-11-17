@@ -161,5 +161,7 @@ CATALOG_DIRECTORY = '/catalog/'
 
 if DEBUG:
     JQUERY_URL = f'<script src="{os.path.join(STATIC_URL, "js/jquery-3.4.1.js")}"></script>'
+    VUE_URL = f'<script src="{os.path.join(STATIC_URL, "js/vue.js")}"></script>'
 else:
     JQUERY_URL = '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>'
+    VUE_URL = '<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>'

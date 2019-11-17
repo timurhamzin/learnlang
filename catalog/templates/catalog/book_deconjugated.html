@@ -6,11 +6,13 @@
     <a href="{% url 'book-detail' pk=book.id %}">Book detail</a>
     <br><br>
   {% endif %}
-  <h1>Title: {{ book.title }}</h1>
+  <div id="parsed_book">
+    <h1>Title: {{ book.title }}</h1>
 
-  <p><strong>Author:</strong> <a href="{{ book.author.get_absolute_url }}">{{ book.author }}</a></p>
+    <p><strong>Author:</strong> <a href="{{ book.author.get_absolute_url }}">{{ book.author }}</a></p>
 
-  <p style="padding-bottom: 0px; padding-top:10px"><strong>Text:<br></strong></p>
-  <p>{{ book.text_deconjugated | safe }}</p>
+    <p style="padding-bottom: 0px; padding-top:10px"><strong>Text:<br></strong></p>
+    <p>{{ book.text_deconjugated | return_safe }}</p>
+  </div>
   {% load static %}
 {% endblock %}

@@ -1,17 +1,9 @@
-.hidden_lemma {
+.wd {
     display: inline;
-    font-size: 8px;
-    color: #bd2130
 }
 
-
-.visible_lemma {
+.highlight {
     display: inline;
-    color: #ef2130
-}
-
-
-.highlighted_lemma {
-    display: inline;
-    color: #ef2130
+    color: #21ef99;
+    opacity: 0.1;
 }
