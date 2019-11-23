@@ -7,7 +7,7 @@ import spacy
 
 
 def deconjugate_test():
-    book = Book.objects.filter(pk=10).first()
+    book = Book.objects.filter(pk=17).first()
     text = book.text
     book.text_deconjugated = deconjugate(text, book.source_language)
     print(book.text_deconjugated)

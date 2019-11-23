@@ -28,39 +28,45 @@ def zip_files_in_dir(dir_name, zip_file_name, file_filter=lambda x: re.search('.
 
 def split_text_test():
     from catalog.models import Book
-    book = Book.objects.filter(pk=5).first()
+    book = Book.objects.filter(pk=17).first()
     return split_text(book.text)
 
 
+# TODO
+# replace tokenizer, results are inconsistent tokenizing the original text and text with translation
 def split_text(text):
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-    result = tokenizer.tokenize(text.replace('...', '$$.'))
+    # $$$ prevents splitting on ... Otherwise English gets split on ..., but French doesnt
+    result = tokenizer.tokenize(re.sub(r'\.\.+', '$$$', text).replace('!"',
+                  '@@').replace('."', '%%').replace('?"', '##').replace(';', ','))
     # print('\n-----\n'.join(tokenizer.tokenize(text)))
-    return list(map(lambda x: x.replace('$$.', '...'), result))
+    return list(map(lambda x: x.replace('$$$', '...').replace('@@',
+                '!"').replace('%%', '."').replace('##', '?"'), result))
 
 
 def make_lrc_dict(book: Book):
-    sentences = split_text(book.text)
+    sentences = split_text(book.text_with_translation)
     split_fld = path.join(settings.MEDIA_ROOT, 'catalog', 'book', str(book.id), 'split')
     start = 0
     i = 0
     result = {'lrc': {}, 'files': {}}
-    for filename in sorted(os.listdir(split_fld))[0:len(sentences)]:
-        if filename.endswith(".mp3"):
-            audio = MP3(path.join(split_fld, filename))
-            duration_sec = audio.info.length
-            start_td = str(datetime.timedelta(seconds=start))
-            hours = start_td[:1]
-            if hours not in result['lrc']:
-                result['lrc'][hours] = {}
-                result['files'][hours] = {}
-            lrc_it = result['lrc'][hours]
-            files_it = result['files'][hours]
-            mm_ss_fffffff = '.'.join((start_td[2:] + '.000000').split('.')[0:2])
-            lrc_it[mm_ss_fffffff] = sentences[i].replace('\n', ' ').replace('\r', ' ')
-            files_it[mm_ss_fffffff] = f'{((i+1)//2 + (i+1)%2):06}'
-            start += duration_sec
-            i += 1
+    if os.path.isdir(split_fld):
+        for filename in sorted(os.listdir(split_fld))[0:len(sentences)]:
+            if filename.endswith(".mp3"):
+                audio = MP3(path.join(split_fld, filename))
+                duration_sec = audio.info.length
+                start_td = str(datetime.timedelta(seconds=start))
+                hours = start_td[:1]
+                if hours not in result['lrc']:
+                    result['lrc'][hours] = {}
+                    result['files'][hours] = {}
+                lrc_it = result['lrc'][hours]
+                files_it = result['files'][hours]
+                mm_ss_fffffff = '.'.join((start_td[2:] + '.000000').split('.')[0:2])
+                lrc_it[mm_ss_fffffff] = sentences[i].replace('\n', ' ').replace('\r', ' ')
+                files_it[mm_ss_fffffff] = f'{((i+1)//2 + (i+1)%2):06}'
+                start += duration_sec
+                i += 1
     return result
 
 
@@ -290,6 +296,10 @@ def get_yandex_translate():
 def translate_text(text: str, translate_directions: str, translate) -> str:
     if not translate:
         translate = get_yandex_translate()
+    # TODOnext line may generate exception yandex_translate.YandexTranslateException: ERR_SERVICE_NOT_AVAIBLE
+    # "POST /catalog/book/15/update/ HTTP/1.1"
+    # 500
+    # 2649130
     return translate.translate(text, translate_directions)
 
 
@@ -303,7 +313,7 @@ def translate_by_sentences(text: str, from_lang: str, to_lang: str, voice_path: 
                            translate=None, book=None):
     if not translate:
         translate = get_yandex_translate()
-    sentences = split_text_by_sentences(text)
+    sentences = split_text(text)
     if sentences:
         text_with_translation = ''
         translation_problems = ''
@@ -359,7 +369,11 @@ def translate_book(book, user, set_book_langs_if_none: bool):
 
     # print('Languages:', translate.langs)
     # print('Translate directions:', translate.directions)
-    # print('Detect language:', translate.detect('Привет, мир!'))
+    #
+    #
+    #
+    #
+    # ('Detect language:', translate.detect('Привет, мир!'))
     # print('Translate:', translate.translate('Привет, мир!', 'ru-en'))  # or just 'en'
 
     book_path = os.path.join(settings.BASE_DIR, settings.MEDIA_ROOT, 'catalog', 'book', str(book.id))
@@ -421,11 +435,11 @@ def split_text_by_sentences_re(text):
     return sentences
 
 
-def split_text_by_sentences(text):
-    import nltk.data
-    tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-    # print('\n-----\n'.join(tokenizer.tokenize(text)))
-    return tokenizer.tokenize(text)
+# def split_text_by_sentences(text):
+#     import nltk.data
+#     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+#     # print('\n-----\n'.join(tokenizer.tokenize(text)))
+#     return tokenizer.tokenize(text)
 
 # import catalog.init_db
 # from importlib import reload
@@ -436,3 +450,9 @@ def split_text_by_sentences(text):
 # reload(catalog.init_db).split_text()
 # text_with_translation, translate, translation_problems, result_file_path = reload(catalog.init_db).init(True)
 
+# from catalog.init_db import make_lrc_dict
+# make_lrc_dict(Book.objects.filter(pk=15).first())
+#
+# from catalog.models import Book
+# from catalog.init_db import make_lrc_files
+# make_lrc_files(Book.objects.filter(pk=15).first())
