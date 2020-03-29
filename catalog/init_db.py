@@ -32,20 +32,27 @@ def split_text_test():
     return split_text(book.text)
 
 
-# TODO
-# replace tokenizer, results are inconsistent tokenizing the original text and text with translation
+# # TODO
+# # replace tokenizer, results are inconsistent tokenizing the original text and text with translation
+# def split_text(text):
+#     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+#     # $$$ prevents splitting on ... Otherwise English gets split on ..., but French doesnt
+#     result = tokenizer.tokenize(re.sub(r'\.\.+', '$$$', text).replace('!"',
+#                   '@@').replace('."', '%%').replace('?"', '##').replace(';', ','))
+#     # print('\n-----\n'.join(tokenizer.tokenize(text)))
+#     return list(map(lambda x: x.replace('$$$', '...').replace('@@',
+#                 '!"').replace('%%', '."').replace('##', '?"'), result))
+
+
 def split_text(text):
-    tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-    # $$$ prevents splitting on ... Otherwise English gets split on ..., but French doesnt
-    result = tokenizer.tokenize(re.sub(r'\.\.+', '$$$', text).replace('!"',
-                  '@@').replace('."', '%%').replace('?"', '##').replace(';', ','))
-    # print('\n-----\n'.join(tokenizer.tokenize(text)))
-    return list(map(lambda x: x.replace('$$$', '...').replace('@@',
-                '!"').replace('%%', '."').replace('##', '?"'), result))
+    import re
+    # sentences = re.split('(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
+    sentences = re.split('(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<![А-Я][а-я]\.)(?<=\.|\?|\!|\:)(?:"|»)*\s+', text)
+    return sentences
 
 
 def make_lrc_dict(book: Book):
-    sentences = split_text(book.text_with_translation)
+    sentences =  book.text_with_translation.split('^^^') # split_text(book.text_with_translation)
     split_fld = path.join(settings.MEDIA_ROOT, 'catalog', 'book', str(book.id), 'split')
     start = 0
     i = 0
@@ -336,7 +343,10 @@ def translate_by_sentences(text: str, from_lang: str, to_lang: str, voice_path: 
                 translation_problems = '\n'.join([translation_problems, translation_result['code']])
                 translation_problems = '\n'.join([translation_problems, sentence])
                 translation_problems = '\n'.join([translation_problems, sentence_translated])
-            text_with_translation = '\n'.join([text_with_translation, sentence_translated])
+            if text_with_translation == '':
+                text_with_translation = sentence_translated + '^^^'
+            else:
+                text_with_translation = '\n^^^'.join([text_with_translation, sentence_translated]) + '^^^'
             text_with_translation = '\n'.join([text_with_translation, sentence, ''])
             if voice_path:
                 tts = gTTS(text=sentence_translated, lang=to_lang, slow=False)
