@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'catalog',
     'user',
-    'django_cleanup',
     'learnlan',
 ]
 

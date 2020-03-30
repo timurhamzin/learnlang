@@ -95,7 +95,7 @@ def make_lrc_files(book):
         os.system(sys_merge_mp3)
         shutil.rmtree(hour_fld)
         lrc_text = '\n'.join([f'[{time}] {line}' for time, line in lrc_dict[hour].items()])
-        with open(f'{merge_path}.lrc', "w") as text_file:
+        with open(f'{merge_path}.lrc', "w", encoding='utf-8') as text_file:
             text_file.write(lrc_text)
 
     def include_in_zip(file_name):
@@ -419,16 +419,13 @@ def join_sound_files(src_fld, trg_fld, result_file_name, extension, use_pydub):
     else:
         if not os.path.isdir(trg_fld):
             os.makedirs(trg_fld, exist_ok=True)
-        # run system command to concatenate files. mac OS is supposed,
-        # edit code to run on Windows (e. g. "copy" instead of cat, but not tested)
-        # e.g.: cat *.mp3 > ../join/join.mp3
-        command = f'cat "{os.path.join(src_fld, "*." + extension)}" > '
-        command += f'"{os.path.join(trg_fld, result_file_name + "." + extension)}"'
-        resp = os.system(command)
-        if resp != 0:  # failed, try Windows batch command
+        if os.name == 'nt':
             command = f'copy /b "{os.path.join(src_fld, "*." + extension)}" '
             command += f'"{os.path.join(trg_fld, result_file_name + "." + extension)}"'
-            resp = os.system(command)
+        else:
+            command = f'cat "{os.path.join(src_fld, "*." + extension)}" > '
+            command += f'"{os.path.join(trg_fld, result_file_name + "." + extension)}"'
+        resp = os.system(command)
         if resp != 0:
             print(f'Failed to execute "{command}"')
 
