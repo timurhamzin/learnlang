@@ -1,14 +1,13 @@
-dj-database-url==0.5.0
-Django==2.1.11
-whitenoise==4.1.2
+dj-database-url
+Django
+whitenoise
 yandex.translate
-gTTS==2.0.4
-nltk==3.4.5
-mutagen==1.42.0
+gTTS
+mutagen
 spacy
 git+https://github.com/ClaudeCoulombe/FrenchLefffLemmatizer.git
-# python -m spacy download fr
-# python -m spacy download --default-timeout=10000 en
+# after installing the ruquirements run following in the terminal: python -m spacy download fr
+# after installing the ruquirements run following in the terminal: python -m spacy download --default-timeout=10000 en
 # may need:
 # nltk.download('punkt')
 # nltk.download('stopwords')

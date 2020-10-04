@@ -6,7 +6,6 @@ from catalog.models import Language, Book, Author, Genre
 from os import path
 from mutagen.mp3 import MP3
 import datetime
-import nltk.data
 import glob
 from zipfile import ZipFile
 import re
@@ -32,27 +31,14 @@ def split_text_test():
     return split_text(book.text)
 
 
-# # TODO
-# # replace tokenizer, results are inconsistent tokenizing the original text and text with translation
-# def split_text(text):
-#     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-#     # $$$ prevents splitting on ... Otherwise English gets split on ..., but French doesnt
-#     result = tokenizer.tokenize(re.sub(r'\.\.+', '$$$', text).replace('!"',
-#                   '@@').replace('."', '%%').replace('?"', '##').replace(';', ','))
-#     # print('\n-----\n'.join(tokenizer.tokenize(text)))
-#     return list(map(lambda x: x.replace('$$$', '...').replace('@@',
-#                 '!"').replace('%%', '."').replace('##', '?"'), result))
-
-
 def split_text(text):
     import re
-    # sentences = re.split('(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
     sentences = re.split('(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<![А-Я][а-я]\.)(?<=\.|\?|\!|\:)(?:"|»)*\s+', text)
     return sentences
 
 
 def make_lrc_dict(book: Book):
-    sentences =  book.text_with_translation.split('^^^') # split_text(book.text_with_translation)
+    sentences =  book.text_with_translation.split('^^^')
     split_fld = path.join(settings.MEDIA_ROOT, 'catalog', 'book', str(book.id), 'split')
     start = 0
     i = 0
@@ -404,7 +390,6 @@ def join_sound_files(src_fld, trg_fld, result_file_name, extension, use_pydub):
 
         result_file = None
         for f in os.listdir(src_fld):
-            # f_full = os.path.abspath(os.path.join(src_fld, f))
             f_full = os.path.join(src_fld, f)
             if f.endswith(extension):
                 if result_file:
@@ -441,12 +426,6 @@ def split_text_by_sentences_re(text):
     sentences = re.split('(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
     return sentences
 
-
-# def split_text_by_sentences(text):
-#     import nltk.data
-#     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-#     # print('\n-----\n'.join(tokenizer.tokenize(text)))
-#     return tokenizer.tokenize(text)
 
 # import catalog.init_db
 # from importlib import reload
